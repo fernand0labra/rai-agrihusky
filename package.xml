@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rai_agrihusky</name>
+  <version>0.0.0</version>
+  <description>Agrihusky Control</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <maintainer email="fernandolabracaso@gmail.com">fernand0labra</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>BSD</license>
+
+  <!-- Use buildtool_depend for build tool packages: -->
+  <buildtool_depend>ament_cmake_ros</buildtool_depend>
+  
+  <!-- Use build_depend for packages you need at compile time: -->
+  <depend>rclpy</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>gazebo_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>
