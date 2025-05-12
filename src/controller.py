@@ -65,6 +65,10 @@ class HuskyController(Node):
         self.timer = self.create_timer(1.0 / self.rate, self.control)
 
 
+    # https://stackoverflow.com/questions/639695/how-to-convert-latitude-or-longitude-to-meters
+    # latDegreeToMeter = 111320;
+    # longDegreeToMeter = cosd(65.58) * latDegreeToMeter;
+
     def odometryCallback(self, msg):  # TODO Update position from GPS
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y       

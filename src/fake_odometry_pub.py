@@ -18,7 +18,7 @@ class FakeOdomPublisher(Node):
         self.cmd_vel_sub = self.create_subscription(Twist, '/unitree/cmd_vel', self.cmd_vel_callback, 10)
 
         # Timer to publish odometry at 10 Hz
-        timer_period = 0.5  # seconds
+        timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.publish_odometry)
 
         # Initial state
