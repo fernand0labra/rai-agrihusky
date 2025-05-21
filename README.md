@@ -3,7 +3,7 @@
 This repository contains the implementation of a husky controller that receives position updates from GPS coordinates and orientation information from an onboard IMU. Two packages are available: ROS1 Noetic and ROS2 Humble.
 
 1. The first package includes an initial test on GPS data obtained using the [Ericsson-GNSS-RTK-ROS-package](https://github.com/LTU-RAI/Ericsson-GNSS-RTK-ROS-package/tree/main) ROS1 Noetic implementation. 
-2. The second package includes the velocity controller and waypoint publisher along with fake sensor publishers. The simulation uses the fake readings the same GPS data as (1) and the [Ericsson-GNSS-RTK-ROS-package](https://github.com/LTU-RAI/Ericsson-GNSS-RTK-ROS-package/tree/ros2) ROS2 Humble implementation.
+2. The second package includes the velocity controller and waypoint publisher along with fake sensor publishers. The simulation uses the fake readings as local and global references, the same GPS data as (1) for waypoint definition and the [Ericsson-GNSS-RTK-ROS-package](https://github.com/LTU-RAI/Ericsson-GNSS-RTK-ROS-package/tree/ros2) ROS2 Humble implementation.
 
 ## Controller Description
 
