@@ -50,6 +50,8 @@ The ROS2 package simulates odometry and GPS readings from the Husky platform. Us
     </tr>
 </table>
 
+*The difference in paths is most likely due to an drifting heading in the simulation
+
 The topics subscribed and published by the fake sensors that are used by the Husky during simulation include:
 
 ```
