@@ -33,9 +33,9 @@ ros2 run agrihusky fake_waypoing_pub.py    # Publishes waypoints
 
 ## Simulation
 
-The simulation on the ROS1 package is a test of previously GPS recorded data on surrounding LTU facilities as seen on Image 1. 
+The simulation on the ROS1 package is a test of previously GPS recorded data on surrounding LTU facilities. 
 
-The ROS2 package simulates odometry and GPS readings from the Husky platform. Using the points from the testing GPS data as waypoints to check the global to local frame transformation, the controller generates velocities that update the local and global position. A resulting simulation can be seen on Image 2.
+The ROS2 package simulates odometry and GPS readings from the Husky platform. Using the points from the testing GPS data as waypoints to check the global to local frame transformation, the controller generates velocities that update the local and global position.
 
 <table>
     <tr>
