@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'rai_agrihusky'
+package_name = 'agrihusky'
 
 setup(
     name=package_name,

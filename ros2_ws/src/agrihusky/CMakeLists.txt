@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14.4)
-project(rai_agrihusky)
+project(agrihusky)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
