@@ -1,4 +1,4 @@
-# Husky Velocity controller for GPS point navigation
+# Husky velocity controller for GPS point navigation
 
 This repository contains the implementation of a husky controller that receives position updates from GPS coordinates and orientation information from an onboard IMU. Two packages are available: ROS1 Noetic and ROS2 Humble.
 
