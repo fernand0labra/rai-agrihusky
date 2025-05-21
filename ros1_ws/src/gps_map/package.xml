@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gps_map</name>
+  <version>0.0.1</version>
+  <description>Package for visualizing robot position using GPS coordinates on a background map.</description>
+
+  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <license>MIT</license>
+
+  <!-- Build dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Run-time dependencies -->
+  <depend>rospy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>ublox_msg</depend>
+
+  <!-- Optional (for GUI/image support if extended) -->
+  <exec_depend>python3-pygame</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <export>
+  </export>
+</package>
