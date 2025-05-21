@@ -1,0 +1,12 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="bag_file" default="$(find gps_map)/data/gps-2025-05-20-13-37-14.bag" />
+  <arg name="start" default="130.0" />
+  <arg name="duration" default="70.0" />
+
+  <!-- Run the visualizer node -->
+  <node name="visualizer_node" pkg="gps_map" type="visualizer.py" output="screen" />
+
+  <!-- Play the rosbag -->
+  <node name="rosbag_play" pkg="rosbag" type="play" output="screen" args="--clock --start=$(arg start) --duration=$(arg duration) $(arg bag_file)" />
+</launch>
