@@ -37,6 +37,8 @@ The simulation on the ROS1 package is a test of previously GPS recorded data on 
 
 The ROS2 package simulates odometry and GPS readings from the Husky platform. Using the points from the testing GPS data as waypoints to check the global to local frame transformation, the controller generates velocities that update the local and global position.
 
+*The path difference is most likely due to drifting north heading in simulation.
+
 <table>
     <tr>
         <td>
@@ -49,8 +51,6 @@ The ROS2 package simulates odometry and GPS readings from the Husky platform. Us
         </td>
     </tr>
 </table>
-
-*The difference in paths is most likely due to an drifting heading in the simulation
 
 The topics subscribed and published by the fake sensors that are used by the Husky during simulation include:
 
