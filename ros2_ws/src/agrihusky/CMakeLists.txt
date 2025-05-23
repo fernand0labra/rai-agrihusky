@@ -10,6 +10,13 @@ find_package(gazebo_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(ublox_msg REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+ament_export_dependencies(rosidl_default_runtime)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/ProbeRequest.srv"
+)
 
 #############
 ## Install ##
@@ -26,11 +33,13 @@ install(DIRECTORY data/
 
 # Install Python executables
 install(PROGRAMS
-  src/fake_odometry_pub.py
-  src/fake_waypoint_pub.py
-  src/fake_gps_pub.py
+  src/simulation/fake_odometry_pub.py
+  src/simulation/fake_gps_pub.py
+  src/simulation/visualizer.py
+  src/probe_interface.py
+  src/waypoint_pub.py
   src/controller.py
-  src/visualizer.py
+
   DESTINATION lib/${PROJECT_NAME}
 )
 

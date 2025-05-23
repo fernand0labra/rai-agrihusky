@@ -8,9 +8,9 @@ from ament_index_python.packages import get_package_share_directory
 
 ###
 
-class FakeWaypointPublisher(Node):
+class WaypointPublisher(Node):
     def __init__(self):
-        super().__init__('fake_waypoint_pub')
+        super().__init__('waypoint_pub')
 
         self.withData = True
         self.path = []
@@ -48,7 +48,7 @@ class FakeWaypointPublisher(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    waypoint_publisher = FakeWaypointPublisher()
+    waypoint_publisher = WaypointPublisher()
 
     try:
         rclpy.spin(waypoint_publisher)

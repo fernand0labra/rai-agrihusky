@@ -9,7 +9,8 @@ setup(
     py_modules=[
         'fake_gps_pub',
         'fake_odometry_pub',
-        'fake_waypoint_pub',
+        'waypoint_pub',
+        'probe_interface',
         'visualizer',
         'controller',
     ],
@@ -26,11 +27,12 @@ setup(
     license='MIT',
     entry_points={
         'console_scripts': [
-            'fake_gps = agrihusky.fake_gps_pub:main'
-            'fake_odom = agrihusky.fake_odometry_pub:main',
-            'fake_waypoint = agrihusky.fake_waypoint_pub:main',
-            'visualize = agrihusky.visualizer:main',
-            'control = agrihusky.controller:main',
+            'sim_visualize = agrihusky.visualizer:main',
+            'sim_fake_gps  = agrihusky.fake_gps_pub:main'
+            'sim_fake_odom = agrihusky.fake_odometry_pub:main',
+            'probe         = agrihusky.probe_interface:main',
+            'waypoint      = agrihusky.waypoint_pub:main',
+            'control       = agrihusky.controller:main',
         ],
     },
 )
