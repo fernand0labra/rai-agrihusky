@@ -87,7 +87,7 @@ void runProbeSequence() {
   }
   data = readSDIData();
   retractToTop();
-  if (data != NULL) {
+  if (data == NULL) {
     Serial.write(PROBE_DATA_FAIL);
   } else {
     Serial.write(PROBE_DATA_SUCCESS);
