@@ -4,6 +4,7 @@ import rclpy, random
 
 from rclpy.node import Node
 from geometry_msgs.msg import Point
+from agrihusky.srv import WaypointRequest
 from ament_index_python.packages import get_package_share_directory
 
 ###
@@ -21,8 +22,17 @@ class WaypointPublisher(Node):
                         self.path.append(line.split('\t'))  # [Latitude, Longitude]
 
         self.waypoint_pub = self.create_publisher(Point, '/husky_planner/waypoint', 10)
+        self.srv = self.create_service(WaypointRequest, 'waypoint_request', self.waypointCallback)
 
-        self.timer = self.create_timer(2, self.publish_waypoint)
+        # self.timer = self.create_timer(2, self.publish_waypoint)  # TODO Communication regarding waypoint arrival between controller and publisher
+
+
+    def waypointCallback(self, request, response):
+        self.get_logger().info(f'Adjusting waypoint: ({request.waypoint.x}, {request.waypoint.y}, {request.waypoint.z})')
+        self.waypoint_pub.publish(request.waypoint)
+
+        response.status = b'\xFF'
+        return response
 
 
     def publish_waypoint(self):
@@ -51,6 +61,7 @@ def main(args=None):
     waypoint_publisher = WaypointPublisher()
 
     try:
+        waypoint_publisher.publish_waypoint()
         rclpy.spin(waypoint_publisher)
     except KeyboardInterrupt:
         pass

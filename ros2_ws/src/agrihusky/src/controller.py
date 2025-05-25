@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import rclpy, serial, math as m, numpy as np
+import rclpy, math as m, numpy as np
 
 from rclpy.node import Node
+from datetime import datetime
 from nav_msgs.msg import Odometry
-from agrihusky.srv import ProbeRequest
+from agrihusky.srv import ProbeRequest, WaypointRequest
 from ublox_msg.msg import UbxNavPvt
 from geometry_msgs.msg import Twist, Point, Quaternion, PointStamped
 # from tf_transformations import euler_from_quaternion
@@ -19,6 +20,9 @@ robotName = 'husky'
 # Length in km of 1° of longitude = 40075 km * cos( latitude ) / 360
 lat_degree_to_meter = 111320
 lon_degree_to_meter = lambda latitude : 40075000 * m.cos(m.radians(latitude)) / 360  
+
+meter_to_lat_degree = lambda meters: meters / 111320
+meter_to_lon_degree = lambda meters, latitude: meters / (lon_degree_to_meter(latitude))
 
 ###
 
@@ -74,8 +78,8 @@ class HuskyController(Node):
         self.maxSpeed = maxSpeed
         self.maxAngVel = maxAngVel
 
-        self.blockingProbeRequest = False
-        self.request = ProbeRequest.Request()
+        self.probeMsgRequest = ProbeRequest.Request()
+        self.waypointMsgRequest = WaypointRequest.Request()
 
         self.goalDistance = goalDistance
         self.slowDownDistance = slowDownDistance
@@ -85,9 +89,15 @@ class HuskyController(Node):
 
         self.cmdVelPub = self.create_publisher(Twist, '/husky_planner/cmd_vel', self.rate)                              # Velocity Command 
 
-        self.client = self.create_client(ProbeRequest, 'probe_request')
-        while not self.client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Probe service not available, waiting...')
+        if not inSimulation:  # Services for probe handling
+            self.probeData = open(f"probe-data-{datetime.now():%Y%m%d-%H%M}.txt")
+            self.probeClient = self.create_client(ProbeRequest, 'probe_request')
+            while not self.probeClient.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info('Probe service not available, waiting...')
+
+            self.waypointClient = self.create_client(WaypointRequest, 'waypoint_request')
+            while not self.waypointClient.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info('Waypoint service not available, waiting...')
 
         self.gpsTopic = '/husky/gps' if inSimulation else '/ublox_client'
         self.gpsMessage = PointStamped if inSimulation else UbxNavPvt
@@ -104,8 +114,6 @@ class HuskyController(Node):
 
 
     def gpsCallback(self, msg):  # https://github.com/KumarRobotics/ublox/blob/ros2/ublox_msgs/msg/NavPVT.msg
-        if self.blockingProbeRequest:  return
-        
         self.ubxNavPvt = msg
 
         if self.latitude is None and self.longitude is None:
@@ -165,8 +173,8 @@ class HuskyController(Node):
 
 
     def probeRequest(self):
-        self.request.start = b'\x00'
-        response = self.client.call(self.request)
+        self.probeMsgRequest.start = b'\x00'
+        response = self.probeClient.call(self.probeMsgRequest)
 
         if   response.status == b'\xFF':  
              result = response.data;  message = "Successful Reading"
@@ -177,9 +185,21 @@ class HuskyController(Node):
         elif response.status == b'\xDF':  
              result = None;           message = "ERROR: Insertion stalled. Retracting..."
 
-        self.get_logger().info(f"Probe Status: ({response.status}, {message})")
+        self.get_logger().info(f"Probe Service Status: ({response.status}, {message})")
         return result
 
+
+    def waypointRequest(self):
+        latitude = meter_to_lat_degree(self.y + 0.1 * np.sign(self.y))
+        longitude = meter_to_lon_degree(self.x, self.latitude)
+
+        self.waypointMsgRequest.waypoint.z = 0.0
+        self.waypointMsgRequest.waypoint.y = latitude
+        self.waypointMsgRequest.waypoint.x = longitude
+
+        response = self.waypointClient.call(self.waypointMsgRequest)
+        self.get_logger().info(f"Waypoint Service Status: ({response.status})")
+    
 
     def control(self):
         if self.newWaypointData and self.newPositionData and self.newOrientationData:
@@ -203,11 +223,10 @@ class HuskyController(Node):
                 self.get_logger().info(f"Waypoint reached! ({self.segmentEnd[0]:.2f}, {self.segmentEnd[0]:.2f})")
 
                 if not inSimulation:
-                    self.blockingProbeRequest = True  # Block GPS readings to impede changes in the GPS message
                     result = self.probeRequest()
-                    if result != None:  self.get_logger().info(f"New data reading ({result})")  ## TODO Save data to file
-                    else:               pass                                                    ## TODO Call service on waypoint_pub to create new waypoint one meter forward   
-                    self.blockingProbeRequest = False # Reactivate GPS readings
+                    if result != None:  self.probeData.write(result)  # Write data if available
+                    else:               self.waypointRequest()        # Otherwise adjust current waypoint
+
             else:
                 refAngle = m.atan2(yRefTrans, xRefTrans)
                 if abs(refAngle) > self.turnInPlaceAngle:
