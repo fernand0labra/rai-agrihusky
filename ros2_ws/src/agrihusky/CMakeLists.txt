@@ -17,6 +17,7 @@ ament_export_dependencies(rosidl_default_runtime)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ProbeRequest.srv"
   "srv/WaypointRequest.srv"
+  DEPENDENCIES geometry_msgs std_msgs
 )
 
 #############

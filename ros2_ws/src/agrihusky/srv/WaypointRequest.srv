@@ -1,3 +1,3 @@
-Point waypoint
+geometry_msgs/Point waypoint
 ---
 byte status
