@@ -22,7 +22,4 @@ ros2 run agrihusky controller.py  # GPS Controller
 
 ---
 
-/lidar_points
-/oak/rgb/rect
-/imu/data/repub
-/ublox_client
+ros2 bag record /tf /tf_static /lidar_points /oak/rgb/raw /imu/data/repub /ublox_client

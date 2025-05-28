@@ -7,7 +7,8 @@ from datetime import datetime
 from nav_msgs.msg import Odometry
 from agrihusky.srv import ProbeRequest, WaypointRequest
 from ublox_msg.msg import UbxNavPvt
-from geometry_msgs.msg import Twist, Point, Quaternion, PointStamped
+from sensor_msgs.msg import Imu
+from geometry_msgs.msg import Twist, Point, PointStamped
 # from tf_transformations import euler_from_quaternion
 
 ###
@@ -88,7 +89,7 @@ class HuskyController(Node):
 
         ###
 
-        self.cmdVelPub = self.create_publisher(Twist, '/husky_planner/cmd_vel', self.rate)                                   # Velocity Command 
+        self.cmdVelPub = self.create_publisher(Twist, '/cmd_vel', self.rate)                                   # Velocity Command 
 
         if not inSimulation and withProbe:  # Services for probe handling
             self.probeData = open(f"probe-data-{datetime.now():%Y%m%d-%H%M}.txt")
@@ -104,8 +105,8 @@ class HuskyController(Node):
         self.gpsMessage = PointStamped if inSimulation else UbxNavPvt
         self.poisitionSub = self.create_subscription(self.gpsMessage, self.gpsTopic, self.gpsCallback, self.rate)            # GPS Callback
 
-        self.orientationSub = self.create_subscription(Odometry,   '/husky/odom',     self.odometryCallback, self.rate) if inSimulation else \
-                              self.create_subscription(Quaternion, '/imu/data/repub', self.imuCallback,      self.rate)      # Odomemtry/IMU Callback
+        self.orientationSub = self.create_subscription(Odometry, '/husky/odom',     self.odometryCallback, self.rate) if inSimulation else \
+                              self.create_subscription(Imu,      '/imu/data/repub', self.imuCallback,      self.rate)        # Odomemtry/IMU Callback
         
         self.waypointSub = self.create_subscription(Point, '/husky_planner/waypoint', self.waypointCallback, self.rate)      # Waypoint Callback
 
@@ -141,6 +142,7 @@ class HuskyController(Node):
         self.latitude = latitude
         self.longitude = longitude
 
+        self.get_logger().info(f"New position: (x:{self.x:.2f}, y:{self.y:.2f})")
         self.newPositionData = True
 
 
@@ -162,6 +164,7 @@ class HuskyController(Node):
         self.linVel = np.array([msg.linear_acceleration.x * dt, msg.linear_acceleration.y * dt])
         self.angVel = msg.angular_velocity.z
 
+        self.get_logger().info(f"New orientation: ({self.angle:.2f})")
         self.newOrientationData = True
 
 
