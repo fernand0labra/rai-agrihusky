@@ -264,7 +264,7 @@ class HuskyController(Node):
 def main(args=None):
     try:
         rclpy.init(args=args)
-        huskyController = HuskyController(rate=25, maxSpeed=0.7, maxAngVel=1.2, goalDistance=0.1, slowDownDistance=0.5, turnInPlaceAngle=0.6)    
+        huskyController = HuskyController(rate=25, maxSpeed=0.7, maxAngVel=0.6, goalDistance=0.1, slowDownDistance=0.5, turnInPlaceAngle=0.2)    
         rclpy.spin(huskyController)
     except KeyboardInterrupt:
         pass
