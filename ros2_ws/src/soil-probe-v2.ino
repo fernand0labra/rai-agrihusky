@@ -76,7 +76,7 @@ void runProbeSequence() {
   if (!moveUntilPotChange()) {
     retractToTop();
     Serial.println("ERROR: No initial pot contact. Retracting...");
-    Serial.write(PROBE_NO_CONTACT)
+    Serial.write(PROBE_NO_CONTACT);
     return;
   }
   if (!insertMode()) {
@@ -85,13 +85,13 @@ void runProbeSequence() {
     Serial.write(PROBE_STALL);
     return;
   }
-  data = readSDIData();
+  char* data = readSDIData();
   retractToTop();
   if (data == NULL) {
     Serial.write(PROBE_DATA_FAIL);
   } else {
     Serial.write(PROBE_DATA_SUCCESS);
-    Serial.write(data)
+    Serial.write(data);
   }
   
 }
@@ -147,19 +147,19 @@ bool insertMode() {
 }
 
 // ——— SDI-12 sampling ———
-void readSDIData() {
+char* readSDIData() {
   Serial.println("Reading SDI sensor...");
   delay(readDelay);
   mySDI12.sendCommand("0R0!");
   delay(500);
   if (mySDI12.available()) {
-    String data = mySDI12.readString()
+    const char *data= mySDI12.readString().c_str();
     Serial.print("SDI Response: ");
     Serial.println(data);
-    return data
+    return data;
   } else {
     Serial.println("No response from SDI-12 sensor");
-    return NULL
+    return NULL;
   }
 }
 
