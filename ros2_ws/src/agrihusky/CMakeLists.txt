@@ -41,6 +41,7 @@ install(PROGRAMS
   src/probe_interface.py
   src/waypoint_pub.py
   src/controller.py
+  src/controller.local.py
 
   DESTINATION lib/${PROJECT_NAME}
 )
