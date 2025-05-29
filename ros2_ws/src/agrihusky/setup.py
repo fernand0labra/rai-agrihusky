@@ -13,7 +13,6 @@ setup(
         'probe_interface',
         'visualizer',
         'controller',
-        'controller.local',
     ],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -34,7 +33,6 @@ setup(
             'probe         = agrihusky.probe_interface:main',
             'waypoint      = agrihusky.waypoint_pub:main',
             'control       = agrihusky.controller:main',
-            'control_local = agrihusky.controller.local:main'
         ],
     },
 )
