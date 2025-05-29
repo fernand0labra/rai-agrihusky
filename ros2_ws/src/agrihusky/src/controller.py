@@ -8,14 +8,14 @@ from nav_msgs.msg import Odometry
 from agrihusky.srv import ProbeRequest, WaypointRequest
 from ublox_msg.msg import UbxNavPvt
 from sensor_msgs.msg import Imu
-from geometry_msgs.msg import Twist, Point, PointStamped
+from geometry_msgs.msg import Twist, Point, PointStamped, Quaternion
 # from tf_transformations import euler_from_quaternion
 
 ###
 
 
 withProbe = False     # Activate probe logic
-inSimulation = False  # Activate fake sensors
+inSimulation = True  # Activate fake sensors
 
 # https://stackoverflow.com/questions/639695/how-to-convert-latitude-or-longitude-to-meters
 # Length in km of 1° of latitude = always 111.32 km
@@ -27,6 +27,14 @@ meter_to_lat_degree = lambda meters: meters / 111320
 meter_to_lon_degree = lambda meters, latitude: meters / (lon_degree_to_meter(latitude))
 
 ###
+
+def euler_to_quaternion(angle):
+    q = Quaternion()  # Assuming the angle is around the Z-axis (yaw), this is the simplest case.
+    q.x = 0.0
+    q.y = 0.0
+    q.z = m.sin(angle / 2.0)
+    q.w = m.cos(angle / 2.0)
+    return q
 
 def euler_from_quaternion(quat):
     """
@@ -66,6 +74,8 @@ class HuskyController(Node):
         self.x = 0.0
         self.y = 0.0
 
+        self.angle = 0.0
+
         self.x_offset = 0.0  # Initial GPS position in meters
         self.y_offset = 0.0
 
@@ -89,7 +99,11 @@ class HuskyController(Node):
 
         ###
 
-        self.cmdVelPub = self.create_publisher(Twist, '/cmd_vel', self.rate)                                   # Velocity Command 
+        self.gpsTopic = '/husky_planner/cmd_vel' if inSimulation else '/cmd_vel'
+        self.cmdVelPub = self.create_publisher(Twist, self.gpsTopic, self.rate)                                   # Velocity Command 
+
+        if inSimulation:
+            self.odometryPub = self.create_publisher(Odometry, '/husky_planner/odom', self.rate)                  # Local Transformed Odometry
 
         if not inSimulation and withProbe:  # Services for probe handling
             self.probeData = open(f"probe-data-{datetime.now():%Y%m%d-%H%M}.txt")
@@ -132,7 +146,7 @@ class HuskyController(Node):
 
         # Calculate delta in meters (Global to local coordinates)
         lat_meters = (latitude  - self.latitude)  * lat_degree_to_meter
-        lon_meters = (longitude - self.longitude) * lon_degree_to_meter(latitude  - self.latitude)
+        lon_meters = (longitude - self.longitude) * lon_degree_to_meter(self.latitude)
 
         # Update local reference from latitude/longitude delta
         self.y = self.y + lat_meters  # Positive latitude  is North, negative is South
@@ -141,6 +155,20 @@ class HuskyController(Node):
         # Update global reference
         self.latitude = latitude
         self.longitude = longitude
+
+        if inSimulation:
+            odom = Odometry()
+            odom.header.stamp = self.get_clock().now().to_msg()
+            odom.header.frame_id = "world"
+            odom.child_frame_id = "base_link"
+            odom.pose.pose.position.x = self.x
+            odom.pose.pose.position.y = self.y
+            odom.pose.pose.position.z = 0.0
+            odom.pose.pose.orientation = euler_to_quaternion(self.angle)  # Convert yaw to Quaternion
+            # odom.twist.twist.linear.x = self.linear_velocity
+            # odom.twist.twist.angular.z = self.angular_velocity
+
+            self.odometryPub.publish(odom)
 
         self.get_logger().info(f"New position: (x:{self.x:.2f}, y:{self.y:.2f})")
         self.newPositionData = True
@@ -174,7 +202,7 @@ class HuskyController(Node):
         
         # Transform waypoint to meters
         lat_meters = msg.y * lat_degree_to_meter
-        lon_meters = msg.x * lon_degree_to_meter(msg.y)     
+        lon_meters = msg.x * lon_degree_to_meter(self.latitude)     
 
         # Transform waypoint to local frame as a position from starting point (offset)
         self.segmentEnd = np.array([lon_meters - self.x_offset, lat_meters - self.y_offset])
@@ -233,7 +261,17 @@ class HuskyController(Node):
 
             if distance < self.goalDistance:  # When distance is close enough to the goal
                 self.newWaypointData = False
-                self.get_logger().info(f"Waypoint reached! ({self.segmentEnd[0]:.2f}, {self.segmentEnd[0]:.2f})")
+                self.get_logger().info(f"Waypoint reached! ({self.segmentEnd[0]:.2f}, {self.segmentEnd[1]:.2f})")
+
+                # Calculate the current yaw (refAngle) to determine how much to rotate
+                # refAngle = m.atan2(yRefTrans, xRefTrans)
+                
+                # If yaw is not zero, rotate in place to align with 0 yaw
+                # if abs(refAngle) > 0.01:  # Tolerance to stop if the yaw is sufficiently close to 0
+                #     cmdVel.angular.z = -np.sign(refAngle) * self.maxAngVel  # Rotate in place to zero the yaw
+                # else:
+                #     cmdVel.angular.z = 0.0  # Stop rotating once it is close enough to 0 yaw
+                #     self.newWaypointData = False
 
                 if not inSimulation and withProbe:  # Probe logic when indicated
                     result = self.probeRequest()
@@ -264,7 +302,7 @@ class HuskyController(Node):
 def main(args=None):
     try:
         rclpy.init(args=args)
-        huskyController = HuskyController(rate=25, maxSpeed=0.7, maxAngVel=0.6, goalDistance=0.1, slowDownDistance=0.5, turnInPlaceAngle=0.2)    
+        huskyController = HuskyController(rate=25, maxSpeed=0.7, maxAngVel=0.6, goalDistance=0.01, slowDownDistance=0.5, turnInPlaceAngle=0.2)    
         rclpy.spin(huskyController)
     except KeyboardInterrupt:
         pass
