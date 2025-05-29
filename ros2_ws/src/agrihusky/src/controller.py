@@ -14,7 +14,7 @@ from geometry_msgs.msg import Twist, Point, PointStamped, Quaternion
 ###
 
 
-withProbe = False     # Activate probe logic
+withProbe = False    # Activate probe logic
 inSimulation = True  # Activate fake sensors
 
 # https://stackoverflow.com/questions/639695/how-to-convert-latitude-or-longitude-to-meters
@@ -117,7 +117,7 @@ class HuskyController(Node):
 
         self.gpsTopic = '/husky/gps' if inSimulation else '/ublox_client'
         self.gpsMessage = PointStamped if inSimulation else UbxNavPvt
-        self.poisitionSub = self.create_subscription(self.gpsMessage, self.gpsTopic, self.gpsCallback, self.rate)            # GPS Callback
+        self.positionSub = self.create_subscription(self.gpsMessage, self.gpsTopic, self.gpsCallback, self.rate)             # GPS Callback
 
         self.orientationSub = self.create_subscription(Odometry, '/husky/odom',     self.odometryCallback, self.rate) if inSimulation else \
                               self.create_subscription(Imu,      '/imu/data/repub', self.imuCallback,      self.rate)        # Odomemtry/IMU Callback
@@ -149,8 +149,8 @@ class HuskyController(Node):
         lon_meters = (longitude - self.longitude) * lon_degree_to_meter(self.latitude)
 
         # Update local reference from latitude/longitude delta
-        self.y = self.y + lat_meters  # Positive latitude  is North, negative is South
-        self.x = self.x + lon_meters  # Positive longitude is East,  negative is West
+        self.y = self.y - lat_meters  # Positive latitude  is North, negative is South
+        self.x = self.x - lon_meters  # Positive longitude is East,  negative is West
 
         # Update global reference
         self.latitude = latitude
@@ -159,18 +159,15 @@ class HuskyController(Node):
         if inSimulation:
             odom = Odometry()
             odom.header.stamp = self.get_clock().now().to_msg()
-            odom.header.frame_id = "world"
-            odom.child_frame_id = "base_link"
+            odom.header.frame_id = "base_link"
             odom.pose.pose.position.x = self.x
             odom.pose.pose.position.y = self.y
             odom.pose.pose.position.z = 0.0
             odom.pose.pose.orientation = euler_to_quaternion(self.angle)  # Convert yaw to Quaternion
-            # odom.twist.twist.linear.x = self.linear_velocity
-            # odom.twist.twist.angular.z = self.angular_velocity
 
             self.odometryPub.publish(odom)
 
-        self.get_logger().info(f"New position: (x:{self.x:.2f}, y:{self.y:.2f})")
+        # self.get_logger().info(f"New position: (x:{self.x:.2f}, y:{self.y:.2f})")
         self.newPositionData = True
 
 
@@ -192,7 +189,7 @@ class HuskyController(Node):
         self.linVel = np.array([msg.linear_acceleration.x * dt, msg.linear_acceleration.y * dt])
         self.angVel = msg.angular_velocity.z
 
-        self.get_logger().info(f"New orientation: ({self.angle:.2f})")
+        # self.get_logger().info(f"New orientation: ({self.angle:.2f})")
         self.newOrientationData = True
 
 
