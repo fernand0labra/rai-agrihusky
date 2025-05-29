@@ -49,7 +49,7 @@ class FakeOdomPublisher(Node):
         # Create and publish Odometry
         odom = Odometry()
         odom.header.stamp = current_time.to_msg()
-        odom.header.frame_id = "odom"
+        odom.header.frame_id = "world"
         odom.child_frame_id = "base_link"
         odom.pose.pose.position.x = self.x
         odom.pose.pose.position.y = self.y

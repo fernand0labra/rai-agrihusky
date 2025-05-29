@@ -54,7 +54,7 @@ class FakeGPSPublisher(Node):
         gps_msg = PointStamped()
         gps_msg.header = Header()
         gps_msg.header.stamp = current_time.to_msg()
-        gps_msg.header.frame_id = 'gps'
+        gps_msg.header.frame_id = "base_link"
 
         gps_msg.point.x = self.longitude
         gps_msg.point.y = self.latitude
