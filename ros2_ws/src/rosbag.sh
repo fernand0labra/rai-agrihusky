@@ -1,25 +1,24 @@
-ros2 launch innovusion ivu_pc2.py  # Lidar
+# Camera ********************************************************************************
+ros2 launch depthai_ros_driver pointcloud.launch.py  
 
-ros2 launch depthai_ros_driver pointcloud.launch.py  # Camera
-
+# IMU ***********************************************************************************
 cd sensor_ws && sr install/
-ros2 launch xsens_mti_ros2_driver xsens_mti_node.launch.py  # IMU
+ros2 launch xsens_mti_ros2_driver xsens_mti_node.launch.py  
+python3 /home/renam/colcon_ws/src/python/imu_pub2.py
 
-# CHECK: Change path in gnss_rtk_exec.sh
-cd sensor_ws && sr install/
-bash /home/renam/sensors_ws/src/Ericsson-GNSS-RTK-ROS-package/src/gnss_rtk_exec.sh  # GPS
+# GPS ***********************************************************************************
+cd agri_ws/rai-agrihusky/ros2_ws && sr install/
+bash src/gnss_rtk_exec.sh  
 
-# CHECK: Velocity values
-# CHECK: Velocity command topic
-ros2 run agrihusky controller.py  # GPS Controller
+# GPS Controller ************************************************************************
+ros2 run agrihusky controller.py  
 
----
-
-# Simulated to Real tf
-
-/home/renam/colcon_ws/src/python/pcl_pub2_no_tf.py
-/home/renam/colcon_ws/src/python/imu_pub2.py
+# Lidar *********************************************************************************
+ros2 launch innovusion ivu_pc2.py 
+python3 /home/renam/colcon_ws/src/python/pcl_pub2_no_tf.py
 
 ---
 
 ros2 bag record /tf /tf_static /lidar_points /oak/rgb/raw /imu/data/repub /ublox_client
+
+ros2 bag record /ublox_client /imu/data/repub /husky_planner/odom /husky_planner/waypoint
