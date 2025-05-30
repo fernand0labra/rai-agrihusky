@@ -115,10 +115,8 @@ class HuskyController(Node):
         ###
 
         self.gpsTopic = '/husky_planner/cmd_vel' if self.inSimulation else '/cmd_vel'
-        self.cmdVelPub = self.create_publisher(Twist, self.gpsTopic, self.rate)                                   # Velocity Command 
-
-        if self.inSimulation:
-            self.odometryPub = self.create_publisher(Odometry, '/husky_planner/odom', self.rate)                  # Local Transformed Odometry
+        self.cmdVelPub = self.create_publisher(Twist, self.gpsTopic, self.rate)                               # Velocity Command 
+        self.odometryPub = self.create_publisher(Odometry, '/husky_planner/odom', self.rate)                  # Local Transformed Odometry
 
         if not self.inSimulation and self.withProbe:  # Services for probe handling
             self.probeData = open(f"probe-data-{datetime.now():%Y%m%d-%H%M}.txt")

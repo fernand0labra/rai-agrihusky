@@ -23,7 +23,7 @@ class WaypointPublisher(Node):
 
         self.path = []
         self.withData = False
-        self.withInput = True
+        self.withInput = False
         self.inSimulation = False
 
         if self.withData and not self.withInput:
