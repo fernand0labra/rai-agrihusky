@@ -22,49 +22,51 @@ class WaypointPublisher(Node):
         super().__init__('waypoint_pub')
 
         self.path = []
-        self.withData = False 
-        self.inSimulation = True
+        self.withData = False
+        self.withInput = True
+        self.inSimulation = False
 
-        if self.withData:
+        if self.withData and not self.withInput:
             with open(get_package_share_directory('agrihusky') + '/data/new-waypoints-gps.txt', 'r') as file:
                 for ldx, line in enumerate(file.readlines()):
-                    # if ldx%2 == 0:  # Read every 60th GPS coordinate as waypoint
                     self.path.append(line.split('\t'))  # [Latitude, Longitude]
 
-        self.gpsTopic = '/husky/gps' if self.inSimulation else '/ublox_client'
-        self.gpsMessage = PointStamped if self.inSimulation else UbxNavPvt
-        self.poisitionSub = self.create_subscription(self.gpsMessage, self.gpsTopic, self.gpsCallback, 10)
+        if not self.withData and not self.withInput:
+            self.gpsTopic = '/husky/gps' if self.inSimulation else '/ublox_client'
+            self.gpsMessage = PointStamped if self.inSimulation else UbxNavPvt
+            self.poisitionSub = self.create_subscription(self.gpsMessage, self.gpsTopic, self.gpsCallback, 10)
 
         self.waypoint_pub = self.create_publisher(Point, '/husky_planner/waypoint', 10)
         self.srv = self.create_service(WaypointRequest, 'waypoint_request', self.waypointCallback)
         
         self.origin = None
-        self.timer = self.create_timer(10, self.publish_waypoint)  # TODO Communication regarding waypoint arrival between controller and publisher
+        self.timer = self.create_timer(2, self.publish_waypoint)  # TODO Communication regarding waypoint arrival between controller and publisher
 
 
     def gpsCallback(self, msg):
         if self.origin is None:
             self.origin = [msg.point.y if self.inSimulation else msg.lat, 
                            msg.point.x if self.inSimulation else msg.lon]
+            meters = 3
 
-            # Vertex (1, 0)
+            # Vertex (1, 0) * meters
             vertex_1_0 = self.origin.copy()
-            vertex_1_0[1] = vertex_1_0[1] + meter_to_lon_degree(1, self.origin[0])
+            vertex_1_0[1] = vertex_1_0[1] + meter_to_lon_degree(meters, self.origin[0])
             self.path.append(vertex_1_0)
         
-            # Vertex (1, 1)
+            # Vertex (1, 1) * meters
             vertex_1_1 = vertex_1_0.copy()
-            vertex_1_1[0] = vertex_1_1[0] + meter_to_lat_degree(1)
+            vertex_1_1[0] = vertex_1_1[0] + meter_to_lat_degree(meters)
             self.path.append(vertex_1_1)
 
-            # Vertex (0, 1)
+            # Vertex (0, 1) * meters
             vertex_0_1 = vertex_1_1.copy()
-            vertex_0_1[1] = vertex_0_1[1] - meter_to_lon_degree(1, vertex_1_1[0])
+            vertex_0_1[1] = vertex_0_1[1] - meter_to_lon_degree(meters, vertex_1_1[0])
             self.path.append(vertex_0_1)
 
             # Vertex (0, 0) :: Origin
             vertex_0_0 = vertex_0_1.copy()
-            vertex_0_0[0] = vertex_0_0[0] - meter_to_lat_degree(1)
+            vertex_0_0[0] = vertex_0_0[0] - meter_to_lat_degree(meters)
             self.path.append(vertex_0_0)
 
         else: return
@@ -81,8 +83,19 @@ class WaypointPublisher(Node):
     def publish_waypoint(self):
         waypoint = Point()
 
-        if len(self.path) > 0:  coordinates = self.path.pop(0)
-        else:                   exit(0)
+        if self.withData or not self.withInput:
+            if len(self.path) > 0:  coordinates = self.path.pop(0)
+            else:                   exit(0)
+
+        else:
+            coordinates = [0, 0]
+            try:
+                coordinates[0] = float(input("Indicate objective latitude: "))
+                coordinates[1] = float(input("Indicate objective longitude: "))
+    
+            except Exception as exception:
+                self.get_logger().info(f'Error from input: {exception}')
+                return
 
         waypoint.y = float(coordinates[0])
         waypoint.x = float(coordinates[1])

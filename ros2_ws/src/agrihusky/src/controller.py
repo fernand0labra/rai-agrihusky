@@ -13,10 +13,6 @@ from geometry_msgs.msg import Twist, Point, PointStamped, Quaternion
 
 ###
 
-
-withProbe = False    # Activate probe logic
-inSimulation = True  # Activate fake sensors
-
 # https://stackoverflow.com/questions/639695/how-to-convert-latitude-or-longitude-to-meters
 # Length in km of 1° of latitude = always 111.32 km
 # Length in km of 1° of longitude = 40075 km * cos( latitude ) / 360
@@ -86,6 +82,9 @@ class HuskyController(Node):
         self.newWaypointData = False
         self.newPositionData = False
         self.newOrientationData = False
+
+        self.withProbe = False     # Activate probe logic
+        self.inSimulation = False  # Activate fake sensors
         
         self.maxSpeed = maxSpeed
         self.maxAngVel = maxAngVel
@@ -99,13 +98,13 @@ class HuskyController(Node):
 
         ###
 
-        self.gpsTopic = '/husky_planner/cmd_vel' if inSimulation else '/cmd_vel'
+        self.gpsTopic = '/husky_planner/cmd_vel' if self.inSimulation else '/cmd_vel'
         self.cmdVelPub = self.create_publisher(Twist, self.gpsTopic, self.rate)                                   # Velocity Command 
 
-        if inSimulation:
+        if self.inSimulation:
             self.odometryPub = self.create_publisher(Odometry, '/husky_planner/odom', self.rate)                  # Local Transformed Odometry
 
-        if not inSimulation and withProbe:  # Services for probe handling
+        if not self.inSimulation and self.withProbe:  # Services for probe handling
             self.probeData = open(f"probe-data-{datetime.now():%Y%m%d-%H%M}.txt")
             self.probeClient = self.create_client(ProbeRequest, 'probe_request')
             while not self.probeClient.wait_for_service(timeout_sec=1.0):
@@ -115,11 +114,11 @@ class HuskyController(Node):
             while not self.waypointClient.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('Waypoint service not available, waiting...')
 
-        self.gpsTopic = '/husky/gps' if inSimulation else '/ublox_client'
-        self.gpsMessage = PointStamped if inSimulation else UbxNavPvt
+        self.gpsTopic = '/husky/gps' if self.inSimulation else '/ublox_client'
+        self.gpsMessage = PointStamped if self.inSimulation else UbxNavPvt
         self.positionSub = self.create_subscription(self.gpsMessage, self.gpsTopic, self.gpsCallback, self.rate)             # GPS Callback
 
-        self.orientationSub = self.create_subscription(Odometry, '/husky/odom',     self.odometryCallback, self.rate) if inSimulation else \
+        self.orientationSub = self.create_subscription(Odometry, '/husky/odom',     self.odometryCallback, self.rate) if self.inSimulation else \
                               self.create_subscription(Imu,      '/imu/data/repub', self.imuCallback,      self.rate)        # Odomemtry/IMU Callback
         
         self.waypointSub = self.create_subscription(Point, '/husky_planner/waypoint', self.waypointCallback, self.rate)      # Waypoint Callback
@@ -134,40 +133,42 @@ class HuskyController(Node):
 
         if self.latitude is None and self.longitude is None:  # When first latitude/longitude obtained
             # Update global reference
-            self.latitude  = msg.point.y if inSimulation else msg.lat
-            self.longitude = msg.point.x if inSimulation else msg.lon
+            self.latitude  = msg.point.y if self.inSimulation else msg.lat
+            self.longitude = msg.point.x if self.inSimulation else msg.lon
 
             # Compute local offset in meters
             self.y_offset = self.latitude  * lat_degree_to_meter
             self.x_offset = self.longitude * lon_degree_to_meter(self.latitude)
 
-        latitude  = msg.point.y if inSimulation else msg.lat
-        longitude = msg.point.x if inSimulation else msg.lon
+            self.get_logger().info(f"Husky at coordinates [{self.latitude}, {self.longitude}]")
+
+        latitude  = msg.point.y if self.inSimulation else msg.lat
+        longitude = msg.point.x if self.inSimulation else msg.lon
 
         # Calculate delta in meters (Global to local coordinates)
         lat_meters = (latitude  - self.latitude)  * lat_degree_to_meter
         lon_meters = (longitude - self.longitude) * lon_degree_to_meter(self.latitude)
 
         # Update local reference from latitude/longitude delta
-        self.y = self.y - lat_meters  # Positive latitude  is North, negative is South
-        self.x = self.x - lon_meters  # Positive longitude is East,  negative is West
+        direction = 1 if self.inSimulation else -1
+        self.y = self.y + lat_meters * direction # Positive latitude  is North, negative is South
+        self.x = self.x + lon_meters * direction # Positive longitude is East,  negative is West
 
         # Update global reference
         self.latitude = latitude
         self.longitude = longitude
 
-        if inSimulation:
-            odom = Odometry()
-            odom.header.stamp = self.get_clock().now().to_msg()
-            odom.header.frame_id = "base_link"
-            odom.pose.pose.position.x = self.x
-            odom.pose.pose.position.y = self.y
-            odom.pose.pose.position.z = 0.0
-            odom.pose.pose.orientation = euler_to_quaternion(self.angle)  # Convert yaw to Quaternion
+        # Publish local position
+        odom = Odometry()
+        odom.header.stamp = self.get_clock().now().to_msg()
+        odom.header.frame_id = "base_link"
+        odom.pose.pose.position.x = self.x
+        odom.pose.pose.position.y = self.y
+        odom.pose.pose.position.z = 0.0
+        odom.pose.pose.orientation = euler_to_quaternion(self.angle)  # Convert yaw to Quaternion
 
-            self.odometryPub.publish(odom)
+        self.odometryPub.publish(odom)
 
-        # self.get_logger().info(f"New position: (x:{self.x:.2f}, y:{self.y:.2f})")
         self.newPositionData = True
 
 
@@ -189,7 +190,6 @@ class HuskyController(Node):
         self.linVel = np.array([msg.linear_acceleration.x * dt, msg.linear_acceleration.y * dt])
         self.angVel = msg.angular_velocity.z
 
-        # self.get_logger().info(f"New orientation: ({self.angle:.2f})")
         self.newOrientationData = True
 
 
@@ -248,7 +248,6 @@ class HuskyController(Node):
                                   [0, 0, 1]])  # Transformation matrix
 
             self.get_logger().info(f"Position: ({self.x:.2f}, {self.y:.2f}) | Angle: {self.angle:.2f}")
-            # self.get_logger().info(f"Speed: {self.linVel} | Yawrate: {self.angVel:.2f}")
 
             [xRefTrans, yRefTrans, _] = np.linalg.solve(self.pose, np.append(self.segmentEnd, 1))  # Coordinate frame transform
             self.get_logger().info(f"Transformed waypoint: ({xRefTrans:.2f}, {yRefTrans:.2f})")
@@ -259,18 +258,9 @@ class HuskyController(Node):
             if distance < self.goalDistance:  # When distance is close enough to the goal
                 self.newWaypointData = False
                 self.get_logger().info(f"Waypoint reached! ({self.segmentEnd[0]:.2f}, {self.segmentEnd[1]:.2f})")
+                self.get_logger().info(f"Husky at coordinates [{self.latitude}, {self.longitude}]")
 
-                # Calculate the current yaw (refAngle) to determine how much to rotate
-                # refAngle = m.atan2(yRefTrans, xRefTrans)
-                
-                # If yaw is not zero, rotate in place to align with 0 yaw
-                # if abs(refAngle) > 0.01:  # Tolerance to stop if the yaw is sufficiently close to 0
-                #     cmdVel.angular.z = -np.sign(refAngle) * self.maxAngVel  # Rotate in place to zero the yaw
-                # else:
-                #     cmdVel.angular.z = 0.0  # Stop rotating once it is close enough to 0 yaw
-                #     self.newWaypointData = False
-
-                if not inSimulation and withProbe:  # Probe logic when indicated
+                if not self.inSimulation and self.withProbe:  # Probe logic when indicated
                     result = self.probeRequest()
                     if result != None:  self.probeData.write(result)  # Write data if available
                     else:               self.waypointRequest()        # Otherwise adjust current waypoint
