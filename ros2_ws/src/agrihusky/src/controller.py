@@ -164,9 +164,8 @@ class HuskyController(Node):
         lon_meters = (longitude - self.longitude) * lon_degree_to_meter(self.latitude)
 
         # Update local reference from latitude/longitude delta
-        direction = 1 if self.inSimulation else -1
-        self.y = self.y + lat_meters * direction # Positive latitude  is North, negative is South
-        self.x = self.x + lon_meters * direction # Positive longitude is East,  negative is West
+        self.y = self.y + lat_meters # Positive latitude  is North, negative is South
+        self.x = self.x + lon_meters # Positive longitude is East,  negative is West
 
         # Update global reference
         self.latitude = latitude
