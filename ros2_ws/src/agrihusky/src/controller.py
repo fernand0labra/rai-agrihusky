@@ -92,8 +92,10 @@ class HuskyController(Node):
         self.y_offset = 0.0
 
         self.ubxNavPvt = None
+
         self.longitude = None
         self.latitude  = None
+        self.latitudeRef = None
 
         self.newWaypointData = False
         self.newPositionData = False
@@ -147,12 +149,14 @@ class HuskyController(Node):
 
         if self.latitude is None and self.longitude is None:  # When first latitude/longitude obtained
             # Update global reference
-            self.latitude  = msg.point.y if self.inSimulation else msg.lat
-            self.longitude = msg.point.x if self.inSimulation else msg.lon
+            self.latitude    = msg.point.y if self.inSimulation else msg.lat
+            self.longitude   = msg.point.x if self.inSimulation else msg.lon
+
+            self.latitudeRef = msg.point.y if self.inSimulation else msg.lat
 
             # Compute local offset in meters
             self.y_offset = self.latitude  * lat_degree_to_meter
-            self.x_offset = self.longitude * lon_degree_to_meter(self.latitude)
+            self.x_offset = self.longitude * lon_degree_to_meter(self.latitudeRef)
 
             self.get_logger().info(f"Husky at coordinates [{self.latitude}, {self.longitude}]")
 
@@ -161,7 +165,7 @@ class HuskyController(Node):
 
         # Calculate delta in meters (Global to local coordinates)
         lat_meters = (latitude  - self.latitude)  * lat_degree_to_meter
-        lon_meters = (longitude - self.longitude) * lon_degree_to_meter(self.latitude)
+        lon_meters = (longitude - self.longitude) * lon_degree_to_meter(self.latitudeRef)
 
         # Update local reference from latitude/longitude delta
         self.y = self.y + lat_meters # Positive latitude  is North, negative is South
@@ -206,7 +210,7 @@ class HuskyController(Node):
         
         # Transform waypoint to meters
         lat_meters = msg.y * lat_degree_to_meter
-        lon_meters = msg.x * lon_degree_to_meter(self.latitude)     
+        lon_meters = msg.x * lon_degree_to_meter(self.latitudeRef)     
 
         # Transform waypoint to local frame as a position from starting point (offset)
         self.segmentEnd = np.array([lon_meters - self.x_offset, lat_meters - self.y_offset])
@@ -234,7 +238,7 @@ class HuskyController(Node):
     def waypointRequest(self):
         # Request new waypoint one meter forward in latitude
         latitude = meter_to_lat_degree(self.y + 0.1 * np.sign(self.y))
-        longitude = meter_to_lon_degree(self.x, self.latitude)
+        longitude = meter_to_lon_degree(self.x, self.latitudeRef)
 
         # Build request message
         self.waypointMsgRequest.waypoint.z = 0.0

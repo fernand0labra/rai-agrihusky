@@ -61,7 +61,7 @@ class WaypointPublisher(Node):
 
             # Vertex (0, 1) * meters
             vertex_0_1 = vertex_1_1.copy()
-            vertex_0_1[1] = vertex_0_1[1] - meter_to_lon_degree(meters, vertex_1_1[0])
+            vertex_0_1[1] = vertex_0_1[1] - meter_to_lon_degree(meters, self.origin[0])
             self.path.append(vertex_0_1)
 
             # Vertex (0, 0) :: Origin
