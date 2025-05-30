@@ -38,6 +38,8 @@ install(PROGRAMS
   src/simulation/fake_odometry_pub.py
   src/simulation/fake_gps_pub.py
   src/simulation/visualizer.py
+  src/tf/tf_gps_pub.py
+  src/tf/tf_imu_pub.py
   src/probe_interface.py
   src/waypoint_pub.py
   src/controller.py

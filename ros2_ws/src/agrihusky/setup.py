@@ -13,6 +13,8 @@ setup(
         'probe_interface',
         'visualizer',
         'controller',
+        'tf_gps_pub',
+        'tf_imu_pub',
     ],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -33,6 +35,8 @@ setup(
             'probe         = agrihusky.probe_interface:main',
             'waypoint      = agrihusky.waypoint_pub:main',
             'control       = agrihusky.controller:main',
+            'tf_gps_pub    = agrihusky.tf_gps_pub:main',
+            'tf_imu_pub    = agrihusky.tf_imu_pub:main',
         ],
     },
 )
