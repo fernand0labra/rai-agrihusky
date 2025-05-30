@@ -56,6 +56,22 @@ def euler_from_quaternion(quat):
 
     return roll, pitch, yaw
 
+def quaternion_multiply(q1, q2):
+    """
+    Multiply two quaternions.
+    q1 and q2 are in [x, y, z, w] format.
+    Returns [x, y, z, w]
+    """
+    x1, y1, z1, w1 = q1
+    x2, y2, z2, w2 = q2
+
+    x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+    y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
+    z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
+    w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+
+    return [x, y, z, w]
+
 ###
 
 class HuskyController(Node):
@@ -175,20 +191,14 @@ class HuskyController(Node):
     def odometryCallback(self, msg):  # https://docs.ros.org/en/noetic/api/nav_msgs/html/msg/Odometry.html
         q = msg.pose.pose.orientation
         (_, _, self.angle) = euler_from_quaternion([q.x, q.y, q.z, q.w])
-
-        self.linVel = np.array([msg.twist.twist.linear.x, msg.twist.twist.linear.y])
-        self.angVel = msg.twist.twist.angular.z
-
         self.newOrientationData = True
 
 
     def imuCallback(self, msg):  # https://docs.ros2.org/foxy/api/sensor_msgs/msg/Imu.html
         q = msg.orientation
-        (_, _, self.angle) = euler_from_quaternion([q.x, q.y, q.z, q.w])
-
-        dt = 1/self.rate # Every 10Hz
-        self.linVel = np.array([msg.linear_acceleration.x * dt, msg.linear_acceleration.y * dt])
-        self.angVel = msg.angular_velocity.z
+        rot_correction = euler_to_quaternion(0, 0, -1.5708)    # Define the frame rotation: -90 degrees (clockwise) around Z
+        rotated_quat = quaternion_multiply(rot_correction, q)  # Apply the rotation correction: q_new = q_rot * q_imu
+        (_, _, self.angle) = euler_from_quaternion(rotated_quat)
 
         self.newOrientationData = True
 
